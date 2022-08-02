@@ -1,8 +1,10 @@
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import mongoose from 'mongoose';
 import { config } from './config/config';
 import Logging from './library/Logging';
+import photoRoutes from './routes/Photo';
 
 const router = express();
 
@@ -22,11 +24,11 @@ mongoose
 const startServer = () => {
 	router.use((req, res, next) => {
 		/** Log the Request */
-		Logging.info(`Incoming -> Method: [${req.method}] - Url: [${req.url}] - IP: [${req.socket.remoteAddress}]`);
+		Logging.primary(`Incoming -> Method: [${req.method}] - Url: [${req.url}] - IP: [${req.socket.remoteAddress}]`);
 
 		res.on('finish', () => {
 			/** Log the Request */
-			Logging.info(`Outgoing -> Method: [${req.method}] - Url: [${req.url}] - IP: [${req.socket.remoteAddress}] - Status: [${res.statusCode}]`);
+			Logging.primary(`Outgoing -> Method: [${req.method}] - Url: [${req.url}] - IP: [${req.socket.remoteAddress}] - Status: [${res.statusCode}]`);
 		});
 
 		next();
@@ -39,7 +41,7 @@ const startServer = () => {
 
 	router.use((req, res, next) => {
 		res.header('Access-Control-Allowed-Origin', '*');
-		res.header('Access-Control-Allowed-Headers', 'Origin, X-requested-With, Content-Type, Accept, Authorization');
+		res.header('Access-Control-Allowed-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
 		if (req.method == 'OPTIONS') {
 			res.header('Access-Control-Allowed-Methods', 'PUT, POST, PATCH, DELETE, GET');
 			return res.status(200).json({});
@@ -48,9 +50,13 @@ const startServer = () => {
 	});
 
 	/** Routes */
+	router.use('/api/photo', photoRoutes);
 
 	/** Healthcheck */
 	router.get('/ping', (req, res, next) => res.status(200).json({ message: 'pong' }));
+
+	/** Uploads Storage Folder */
+	router.use('/uploads', express.static(path.resolve('uploads')));
 
 	/** Error handling */
 	router.use((req, res, next) => {
